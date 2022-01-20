@@ -1,0 +1,26 @@
+{
+  "name": "people-network",
+  "version": "1.0.0",
+  "description": "to find how many steps away I am from any contact",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuisArmando-TestCoder/people-network.git"
+  },
+  "author": "latestcoder",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LuisArmando-TestCoder/people-network/issues"
+  },
+  "homepage": "https://github.com/LuisArmando-TestCoder/people-network#readme",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "cheerio": "^1.0.0-rc.10",
+    "playwright": "^1.17.2",
+    "puppeteer": "^13.1.1"
+  }
+}
