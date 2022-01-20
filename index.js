@@ -1,3 +1,18 @@
+const {config} = require("dotenv");
+
+config(); 
+
+const Insta = require('scraper-instagram');
+const InstaClient = new Insta();
+
+InstaClient.authBySessionId(process.env.SESSION_ID)
+	.then(account => console.log(account))
+	.catch(err => console.error(err));
+
+InstaClient.getProfile("latestcoder")
+	.then(profile => console.log(profile.user))
+	.catch(err => console.error(err));
+
 // const axios = require('axios'); 
 // const cheerio = require('cheerio'); 
  
@@ -10,16 +25,16 @@
 // 	// ['https://scrapeme.live/shop/page/2/', 'https://scrapeme.live/shop/page/3/', ... ] 
 // });
 
-const puppeteer = require('puppeteer');
+// const puppeteer = require('puppeteer');
 
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto('https://www.instagram.com/latestcoder', {
-    waitUntil: 'networkidle2',
-  });
-//   console.log(page)
-  await page.pdf({ path: 'screenshot.pdf', format: 'a4' });
+// (async () => {
+//   const browser = await puppeteer.launch();
+//   const page = await browser.newPage();
+//   await page.goto('https://www.instagram.com/latestcoder', {
+//     waitUntil: 'networkidle2',
+//   });
+// //   console.log(page)
+//   await page.pdf({ path: 'screenshot.pdf', format: 'a4' });
 
-  await browser.close();
-})();
+//   await browser.close();
+// })();
