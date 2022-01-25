@@ -1,40 +1,98 @@
-const {config} = require("dotenv");
+const {config} = require('dotenv')
+const puppeteer = require('puppeteer');
 
-config(); 
+config()
 
-const Insta = require('scraper-instagram');
-const InstaClient = new Insta();
+const script = async (username) => {
+    const browser = await puppeteer.launch({ 
+        args: [
+            '--incognito',
+        ],
+        headless: false 
+    });
+    const page = await browser.newPage();
+    await page.goto('https://www.instagram.com/accounts/login', { waitUntil: "networkidle2" });
+    await page.type('input[name=username]', process.env.IG_USERNAME, { delay: 20 });
+    await page.type('input[name=password]', process.env.IG_PASSWORD, { delay: 20 });
+    await page.click('button[type=submit]', { delay: 20 });
+    await page.waitFor(5000)
 
-InstaClient.authBySessionId(process.env.SESSION_ID)
-	.then(account => console.log(account))
-	.catch(err => console.error(err));
+    const notifyBtns = await page.$x("//button[contains(text(), 'Not Now')]");
+    if (notifyBtns.length > 0) {
+        await notifyBtns[0].click();
+    } else {
+        console.log("No notification buttons to click.");
+    }
+    await page.goto(`https://www.instagram.com/${username}`, { waitUntil: "networkidle2" });
+    // await page.click('a[href="/rmbhh/"]');
+    await page.waitFor(2000);
+    const followersBtn = await page.$('div[id=react-root] > section > main > div > header > section > ul > li:nth-child(2) > a');
+    await followersBtn.evaluate(btn => btn.click());
 
-InstaClient.getProfile("latestcoder")
-	.then(profile => console.log(profile.user))
-	.catch(err => console.error(err));
+    await page.waitFor(3000);
+    const followersDialog = 'body > div > div > div > div + div';
+    await scrollDown(followersDialog, page);
+	await page.waitFor(3000);
+	await scrollDown(followersDialog, page);
+	
+    console.log("getting followers");
+    const list1 = await page.$$('body > div > div > div > div > ul > div > li > div > div > div > div > span > a');
+    const followers = await Promise.all(list1.map(async item => {
+        const username = await (await item.getProperty('innerText')).jsonValue();
 
-// const axios = require('axios'); 
-// const cheerio = require('cheerio'); 
- 
-// axios.get('https://www.instagram.com/latestcoder/').then(({ data }) => { 
-// 	// const $ = cheerio.load(data); // Initialize cheerio 
-// 	// const [h2] = $("#main > ul > li.post-730.product.type-product.status-publish.has-post-thumbnail.product_cat-pokemon.product_cat-seed.product_tag-overgrow.product_tag-seed.product_tag-venusaur.instock.taxable.shipping-taxable.purchasable.product-type-simple > a.woocommerce-LoopProduct-link.woocommerce-loop-product__link > h2"); 
- 
-// 	// console.log(h2.children[0].data); 
-//     console.log(data)
-// 	// ['https://scrapeme.live/shop/page/2/', 'https://scrapeme.live/shop/page/3/', ... ] 
-// });
+        return username
+    }));
 
-// const puppeteer = require('puppeteer');
+	console.log(followers)
 
-// (async () => {
-//   const browser = await puppeteer.launch();
-//   const page = await browser.newPage();
-//   await page.goto('https://www.instagram.com/latestcoder', {
-//     waitUntil: 'networkidle2',
-//   });
-// //   console.log(page)
-//   await page.pdf({ path: 'screenshot.pdf', format: 'a4' });
+    const closeBtn = await page.$('body > div > div > div > div:nth-child(1) > div > div:nth-child(3) > button');
+    await closeBtn.evaluate(btn => btn.click());
 
-//   await browser.close();
-// })();
+    const followingBtn = await page.$('div[id=react-root] > section > main > div > header > section > ul > li:nth-child(3) > a');
+    await followingBtn.evaluate(btn => btn.click());
+    
+    await page.waitFor(3000);
+    const followingDialog = 'body > div > div > div > div + div + div';
+    await scrollDown(followingDialog, page);
+	await page.waitFor(3000);
+	await scrollDown(followingDialog, page);
+
+    console.log("getting following");
+    const list2 = await page.$$('div > div > span > a');
+    const following = await Promise.all(list2.map(async item => {
+        const username = await (await item.getProperty('innerText')).jsonValue()
+        return username;
+    }));
+
+    console.log(`followers: ${followers}`);
+    console.log(`following: ${following}`);
+
+    const mutualFollowers = following.filter(item => followers.includes(item));
+    await browser.close();
+
+	console.log(mutualFollowers)
+
+	return mutualFollowers
+};
+
+async function scrollDown(selector, page) {
+    await page.evaluate(async selector => {
+        const section = document.querySelector(selector);
+        await new Promise((resolve, reject) => {
+            let totalHeight = 0;
+            let distance = 100;
+            const timer = setInterval(() => {
+                var scrollHeight = section.scrollHeight;
+                section.scrollTop = 100000000;
+                totalHeight += distance;
+
+                if (totalHeight >= scrollHeight){
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, 100);
+        });
+    }, selector);
+}
+
+script("latestcoder")
