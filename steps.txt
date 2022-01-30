@@ -1,0 +1,7 @@
+const getUsers = () => [...document.querySelectorAll('div > div > span > a')].map(({ innerText }) => innerText)
+// open followers dialog
+followers = getUsers()
+
+// open following dialog
+following = getUsers()
+mutualFollowers = String(following.filter(item => followers.includes(item)))

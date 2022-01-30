@@ -3,26 +3,7 @@ const puppeteer = require('puppeteer');
 
 config()
 
-const script = async (username) => {
-    const browser = await puppeteer.launch({ 
-        args: [
-            '--incognito',
-        ],
-        headless: false 
-    });
-    const page = await browser.newPage();
-    await page.goto('https://www.instagram.com/accounts/login', { waitUntil: "networkidle2" });
-    await page.type('input[name=username]', process.env.IG_USERNAME, { delay: 20 });
-    await page.type('input[name=password]', process.env.IG_PASSWORD, { delay: 20 });
-    await page.click('button[type=submit]', { delay: 20 });
-    await page.waitFor(5000)
-
-    const notifyBtns = await page.$x("//button[contains(text(), 'Not Now')]");
-    if (notifyBtns.length > 0) {
-        await notifyBtns[0].click();
-    } else {
-        console.log("No notification buttons to click.");
-    }
+const getMutualFollowers = async (page, username) => {
     await page.goto(`https://www.instagram.com/${username}`, { waitUntil: "networkidle2" });
     // await page.click('a[href="/rmbhh/"]');
     await page.waitFor(2000);
@@ -33,7 +14,6 @@ const script = async (username) => {
     const followersDialog = 'body > div > div > div > div + div';
     await scrollDown(followersDialog, page);
 	await page.waitFor(3000);
-	await scrollDown(followersDialog, page);
 	
     console.log("getting followers");
     const list1 = await page.$$('body > div > div > div > div > ul > div > li > div > div > div > div > span > a');
@@ -42,8 +22,6 @@ const script = async (username) => {
 
         return username
     }));
-
-	console.log(followers)
 
     const closeBtn = await page.$('body > div > div > div > div:nth-child(1) > div > div:nth-child(3) > button');
     await closeBtn.evaluate(btn => btn.click());
@@ -55,7 +33,6 @@ const script = async (username) => {
     const followingDialog = 'body > div > div > div > div + div + div';
     await scrollDown(followingDialog, page);
 	await page.waitFor(3000);
-	await scrollDown(followingDialog, page);
 
     console.log("getting following");
     const list2 = await page.$$('div > div > span > a');
@@ -64,11 +41,7 @@ const script = async (username) => {
         return username;
     }));
 
-    console.log(`followers: ${followers}`);
-    console.log(`following: ${following}`);
-
     const mutualFollowers = following.filter(item => followers.includes(item));
-    await browser.close();
 
 	console.log(mutualFollowers)
 
@@ -90,9 +63,38 @@ async function scrollDown(selector, page) {
                     clearInterval(timer);
                     resolve();
                 }
-            }, 100);
+            }, 500);
         });
     }, selector);
 }
 
-script("latestcoder")
+
+
+(async () => {
+    const browser = await puppeteer.launch({ 
+        args: [
+            '--incognito',
+        ],
+        headless: false 
+    });
+    const page = await browser.newPage();
+    await page.goto('https://www.instagram.com/accounts/login', { waitUntil: "networkidle2" });
+    await page.type('input[name=username]', process.env.IG_USERNAME, { delay: 20 });
+    await page.type('input[name=password]', process.env.IG_PASSWORD, { delay: 20 });
+    await page.click('button[type=submit]', { delay: 20 });
+    await page.waitFor(5000)
+
+    const notifyBtns = await page.$x("//button[contains(text(), 'Not Now')]");
+    if (notifyBtns.length > 0) {
+        await notifyBtns[0].click();
+    } else {
+        console.log("No notification buttons to click.");
+    }
+
+    const mutualFollowers = await getMutualFollowers(page, "latestcoder")
+
+    for (const mutualFollower of mutualFollowers) {
+        await getMutualFollowers(page, mutualFollower)
+    }
+    await browser.close();
+})()
